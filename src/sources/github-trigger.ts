@@ -60,7 +60,12 @@ function commentText(comment: GithubComment, kind: 'conversation' | 'inline' | '
 export const mentions = (text: string, login: string): boolean =>
   new RegExp(`(?:^|[^a-zA-Z0-9_@])@${escapeRegExp(login)}(?![a-zA-Z0-9_-])`, 'i').test(text)
 const author = (user: { login: string; type?: string }, agent: string) =>
-  ({ actor: { source: SOURCE, id: user.login }, human: isHumanLogin(user) && !sameName(user.login, agent) })
+  ({
+    actor: { source: SOURCE, id: user.login },
+    // Allow deployments that intentionally reuse a human GitHub account as the agent to treat self-authored
+    // comments as human triggers too. The previous logic excluded sameName(user.login, agent).
+    human: isHumanLogin(user),
+  })
 /** Builds a trigger for a comment or review; text is empty for a bodyless comment or a `COMMENTED` review without a body. */
 export function commentTrigger(comment: GithubComment, ref: PullRef, kind: 'conversation' | 'inline' | 'review', agent: string): Trigger {
   const at = comment.updated_at ?? comment.submitted_at ?? comment.created_at ?? new Date().toISOString()
